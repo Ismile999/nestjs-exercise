@@ -117,138 +117,199 @@ The seeded database includes two users:
    - Password: user123
    - Role: user
 
-## Challenge Overview
+# TaskFlow API
 
-This codebase contains a partially implemented task management API that suffers from various architectural, performance, and security issues. Your task is to analyze, refactor, and enhance the codebase to create a production-ready, scalable, and secure application.
+A robust, scalable, and production-ready **Task Management System** built with [NestJS](https://nestjs.com/), supporting advanced features like distributed caching, rate limiting, background processing, and comprehensive logging.
 
-## Core Problem Areas
+---
 
-The codebase has been intentionally implemented with several critical issues that need to be addressed:
+## 🚀 **Key Features & Improvements**
 
-### 1. Performance & Scalability Issues
+### 1. **Configuration & Environment Management**
+- Uses `@nestjs/config` for centralized, environment-based configuration.
+- Supports custom config loading (e.g., `jwtConfig`).
+- **Validation schema** recommended for environment variables.
 
-- N+1 query problems throughout the application
-- Inefficient in-memory filtering and pagination that won't scale
-- Excessive database roundtrips in batch operations
-- Poorly optimized data access patterns
+### 2. **Database Integration**
+- Async `TypeOrmModule` setup with environment-driven config.
+- Proper type safety for ports and credentials.
+- `synchronize` and `logging` enabled only in development for safety.
 
-### 2. Architectural Weaknesses
+### 3. **Caching**
+- Migrated from inefficient in-memory cache to **NestJS CacheModule** with Redis.
+- Supports TTL, namespacing, serialization, and distributed cache.
+- Sample `CacheService` provided for easy cache operations.
 
-- Inappropriate separation of concerns (e.g., controllers directly using repositories)
-- Missing domain abstractions and service boundaries
-- Lack of transaction management for multi-step operations
-- Tightly coupled components with high interdependency
+### 4. **Queueing & Background Processing**
+- Uses `@nestjs/bullmq` for distributed job queues (backed by Redis).
+- Implements robust background workers for overdue task processing.
+- Supports batch queueing and error handling.
 
-### 3. Security Vulnerabilities
+### 5. **Scheduling**
+- Uses `@nestjs/schedule` for cron jobs (e.g., hourly overdue task checks).
 
-- Inadequate authentication mechanism with several vulnerabilities
-- Improper authorization checks that can be bypassed
-- Unprotected sensitive data exposure in error responses
-- Insecure rate limiting implementation
+### 6. **Rate Limiting**
+- Global and per-route rate limiting with `@nestjs/throttler`.
+- Custom decorator and guard pattern for flexible rate limits.
+- Redis-backed implementation for distributed enforcement.
 
-### 4. Reliability & Resilience Gaps
+### 7. **Validation & Security**
+- Global `ValidationPipe` with `whitelist`, `forbidNonWhitelisted`, and transformation.
+- Uses `helmet` for HTTP security headers.
+- CORS enabled.
+- JWT-based authentication and role-based authorization.
+- Input validation with DTOs and `class-validator`.
 
-- Ineffective error handling strategies
-- Missing retry mechanisms for distributed operations
-- Lack of graceful degradation capabilities
-- In-memory caching that fails in distributed environments
+### 8. **Logging & Observability**
+- Comprehensive `LoggingInterceptor` using built-in NestJS `Logger`.
+- Logs requests, responses, errors, user IDs, IPs, and redacts sensitive info.
+- Ready for integration with external logging solutions (e.g., Winston, ELK).
 
-## Implementation Requirements
+### 9. **API Documentation**
+- Swagger (`@nestjs/swagger`) auto-generates interactive API docs.
+- Includes Bearer Auth, contact, and license info.
 
-Your implementation should address the following areas:
+### 10. **App Structure & Modularity**
+- Feature modules: `UsersModule`, `TasksModule`, `AuthModule`, etc.
+- Clear separation of concerns and dependency injection.
+- Supports global interceptors, guards, and providers.
 
-### 1. Performance Optimization
+---
 
-- Implement efficient database query strategies with proper joins and eager loading
-- Create a performant filtering and pagination system
-- Optimize batch operations with bulk database operations
-- Add appropriate indexing strategies
+## 🛠️ **Setup & Usage Guide**
 
-### 2. Architectural Improvements
+### **1. Clone & Install**
 
-- Implement proper domain separation and service abstractions
-- Create a consistent transaction management strategy
-- Apply SOLID principles throughout the codebase
-- Implement at least one advanced pattern (e.g., CQRS, Event Sourcing)
+```bash
+git clone https://github.com/your-org/taskflow-api.git
+cd taskflow-api
+npm install
+```
 
-### 3. Security Enhancements
+### **2. Configure Environment**
 
-- Strengthen authentication with refresh token rotation
-- Implement proper authorization checks at multiple levels
-- Create a secure rate limiting system
-- Add data validation and sanitization
+Copy `.env.example` to `.env` and fill in your values:
 
-### 4. Resilience & Observability
+```env
+NODE_ENV=development
+PORT=3000
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=yourpassword
+DB_DATABASE=taskflow
+REDIS_HOST=localhost
+REDIS_PORT=6379
+JWT_SECRET=your_jwt_secret
+```
 
-- Implement comprehensive error handling and recovery mechanisms
-- Add proper logging with contextual information
-- Create meaningful health checks
-- Implement at least one observability pattern
+### **3. Run the Application**
 
-## Advanced Challenge Areas
+```bash
+npm run start:dev
+```
 
-For senior engineers, we expect solutions to also address:
+### **4. Access API & Docs**
 
-### 1. Distributed Systems Design
+- API: [http://localhost:3000/api/v1](http://localhost:3000/api/v1)
+- Swagger UI: [http://localhost:3000/api](http://localhost:3000/api)
 
-- Create solutions that work correctly in multi-instance deployments
-- Implement proper distributed caching with invalidation strategies
-- Handle concurrent operations safely
-- Design for horizontal scaling
+---
 
-### 2. System Reliability
+## 📚 **Project Structure**
 
-- Implement circuit breakers for external service calls
-- Create graceful degradation pathways for non-critical features
-- Add self-healing mechanisms
-- Design fault isolation boundaries
+```
+src/
+  modules/
+    users/
+    tasks/
+    auth/
+  queues/
+    task-processor/
+    scheduled-tasks/
+  common/
+    services/
+      cache.service.ts
+    interceptors/
+      logging.interceptor.ts
+  app.module.ts
+  main.ts
+```
 
-### 3. Performance Under Load
+---
 
-- Optimize for high throughput scenarios
-- Implement backpressure mechanisms
-- Create efficient resource utilization strategies
-- Design for predictable performance under varying loads
+## 📝 **Major Improvements (Summary Table)**
 
-## Evaluation Criteria
+| Area             | Before (Problems)                                   | After (Improvements)                                                                 |
+|------------------|-----------------------------------------------------|--------------------------------------------------------------------------------------|
+| Caching          | In-memory, not distributed, memory leaks            | Redis-backed, TTL, namespacing, scalable via CacheModule                             |
+| Rate Limiting    | Inefficient, in-memory, not per-route, not scalable | Decorator + Guard, Redis-backed, per-route config, no memory leaks                   |
+| Logging          | Basic, no context, logs sensitive data              | Interceptor logs requests/responses, redacts sensitive info, includes user context    |
+| Validation       | Not enforced globally                               | Global ValidationPipe, DTOs, class-validator                                         |
+| Queueing         | None or basic, no error handling                    | BullMQ with batch processing, error handling, retries, distributed                   |
+| Scheduling       | None or basic                                       | Cron jobs with ScheduleModule, robust overdue task processing                        |
+| Security         | Minimal                                             | Helmet, CORS, JWT auth, role-based guards                                            |
+| Documentation    | None or minimal                                     | Swagger with Bearer Auth, contact/license, DTO docs                                  |
+| Modularization   | Not modular                                         | Feature modules, dependency injection, scalable structure                            |
 
-Your solution will be evaluated on:
+---
 
-1. **Problem Analysis**: How well you identify and prioritize the core issues
-2. **Technical Implementation**: The quality and cleanliness of your code
-3. **Architectural Thinking**: Your approach to solving complex design problems
-4. **Performance Improvements**: Measurable enhancements to system performance
-5. **Security Awareness**: Your identification and remediation of vulnerabilities
-6. **Testing Strategy**: The comprehensiveness of your test coverage
-7. **Documentation**: The clarity of your explanation of key decisions
+## 🧑‍💻 **Developer Guide**
 
-## Submission Guidelines
+### **Caching Example**
 
-1. Fork this repository to your own GitHub account
-2. Make regular, meaningful commits that tell a story
-3. Create a comprehensive README.md in your forked repository containing:
-   - Analysis of the core problems you identified
-   - Overview of your architectural approach
-   - Performance and security improvements made
-   - Key technical decisions and their rationale
-   - Any tradeoffs you made and why
-4. Ensure your repository is public so we can review your work
-5. Submit the link to your public GitHub repository
+```typescript
+// Inject and use CacheService
+constructor(private readonly cacheService: CacheService) {}
 
-## API Endpoints
+await this.cacheService.set('myKey', myValue, 120); // TTL 2 minutes
+const value = await this.cacheService.get('myKey');
+```
 
-The API should expose the following endpoints:
+### **Rate Limiting Example**
 
-### Authentication
-- `POST /auth/login` - Authenticate a user
-- `POST /auth/register` - Register a new user
+```typescript
+@UseGuards(RateLimitGuard)
+@RateLimit({ limit: 10, windowMs: 60000 })
+@Get('tasks')
+getTasks() { ... }
+```
 
-### Tasks
-- `GET /tasks` - List tasks with filtering and pagination
-- `GET /tasks/:id` - Get task details
-- `POST /tasks` - Create a task
-- `PATCH /tasks/:id` - Update a task
-- `DELETE /tasks/:id` - Delete a task
-- `POST /tasks/batch` - Batch operations on tasks
+### **Logging Example**
 
-Good luck! This challenge is designed to test the skills of experienced engineers in creating scalable, maintainable, and secure systems.
+- All requests/responses/errors are logged with context.
+- Sensitive fields (password, token) are redacted automatically.
+
+### **Swagger**
+
+- Visit `/api` for interactive docs.
+- Use the "Authorize" button for JWT-protected routes.
+
+---
+
+## ⚠️ **Production Recommendations**
+
+- Always use Redis for cache and rate limiting in production.
+- Never enable TypeORM `synchronize` in production.
+- Use environment variable validation for safety.
+- Integrate with external logging/monitoring as needed.
+
+---
+
+## 📖 **References**
+
+- [NestJS Docs](https://docs.nestjs.com/)
+- [NestJS Caching](https://docs.nestjs.com/techniques/caching)
+- [NestJS BullMQ](https://docs.nestjs.com/techniques/queues)
+- [NestJS Swagger](https://docs.nestjs.com/openapi/introduction)
+
+---
+
+## 👏 **Contributing**
+
+Pull requests and issues are welcome! Please follow the code style and add tests for new features.
+
+---
+
+**TaskFlow API is designed for reliability, scalability, and clarity.  
+For questions or improvements, open an issue or contact the maintainers.**

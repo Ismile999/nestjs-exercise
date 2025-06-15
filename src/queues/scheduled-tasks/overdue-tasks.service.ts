@@ -18,39 +18,41 @@ export class OverdueTasksService {
     private tasksRepository: Repository<Task>,
   ) {}
 
-  // TODO: Implement the overdue tasks checker
-  // This method should run every hour and check for overdue tasks
   @Cron(CronExpression.EVERY_HOUR)
   async checkOverdueTasks() {
     this.logger.debug('Checking for overdue tasks...');
-    
-    // TODO: Implement overdue tasks checking logic
-    // 1. Find all tasks that are overdue (due date is in the past)
-    // 2. Add them to the task processing queue
-    // 3. Log the number of overdue tasks found
-    
-    // Example implementation (incomplete - to be implemented by candidates)
+
     const now = new Date();
+
+    // Fetch overdue tasks in batches if needed
     const overdueTasks = await this.tasksRepository.find({
       where: {
         dueDate: LessThan(now),
         status: TaskStatus.PENDING,
       },
+      select: ['id'], // Only fetch the ID to save memory
     });
-    
+
     this.logger.log(`Found ${overdueTasks.length} overdue tasks`);
-    
-    // Add tasks to the queue to be processed
-    // TODO: Implement adding tasks to the queue
-    for (const task of overdueTasks) {
-      try {
-        await this.taskQueue.add('process-overdue-task', { taskId: task.id });
-        this.logger.debug(`Queued overdue task: ${task.id}`);
-      } catch (error:any) {
-        this.logger.error(`Failed to queue task ${task.id}: ${error.message}`);
-      }
+
+    if (overdueTasks.length === 0) {
+      this.logger.debug('No overdue tasks found.');
+      return;
     }
-    
+
+    // Use addBulk for efficiency
+    const jobs = overdueTasks.map(task => ({
+      name: 'process-overdue-task',
+      data: { taskId: task.id },
+    }));
+
+    try {
+      await this.taskQueue.addBulk(jobs);
+      this.logger.log(`Queued ${jobs.length} overdue tasks for processing`);
+    } catch (error: any) {
+      this.logger.error(`Failed to queue overdue tasks: ${error.message}`);
+    }
+
     this.logger.debug('Overdue tasks check completed');
   }
-} 
+}

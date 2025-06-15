@@ -2,9 +2,14 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Security headers
+  app.use(helmet());
   
   // Global validation pipe
   app.useGlobalPipes(
@@ -21,6 +26,9 @@ async function bootstrap() {
   // CORS
   app.enableCors();
 
+    // Global interceptors 
+  app.useGlobalInterceptors(new LoggingInterceptor());
+
   // Swagger documentation
   const config = new DocumentBuilder()
     .setTitle('TaskFlow API')
@@ -35,5 +43,6 @@ async function bootstrap() {
   await app.listen(port);
   console.log(`Application running on: http://localhost:${port}`);
   console.log(`Swagger documentation: http://localhost:${port}/api`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 }
 bootstrap(); 
